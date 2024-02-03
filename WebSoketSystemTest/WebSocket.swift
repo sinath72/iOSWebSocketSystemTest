@@ -6,17 +6,20 @@
 //
 
 import Foundation
-
+import SwiftUI
 class WebSocket:NSObject,ObservableObject,URLSessionWebSocketDelegate{
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         print("Did Connected Socket")
-        ping()
-        receive()
+        sucssedConnection = true
     }
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         print("Connection Closed with Reason of:",reason ?? "")
+        sucssedConnection = false
     }
     private var webSocket:URLSessionWebSocketTask?
+    @Published var strData:[String] = []
+    @Published var data:[String] = []
+    @Published var sucssedConnection:Bool = false
     init(webSocket: URLSessionWebSocketTask? = nil) {
         super.init()
         self.webSocket = webSocket
@@ -52,23 +55,23 @@ class WebSocket:NSObject,ObservableObject,URLSessionWebSocketDelegate{
             }
         })}
     func receive(){
-        DispatchQueue.main.async{
-            self.webSocket?.receive(completionHandler: { resualt in
-                switch resualt {
-                case .success(let message):
-                    switch message{
-                    case .data(let data):
-                        print("Get Data:",data)
-                    case .string(let message):
-                        print("Get Message:",message)
-                    @unknown default:
-                        break
-                    }
-                case .failure(let error):
-                    print("Recive Error:",error)
+        self.webSocket?.receive(completionHandler: { [self] resualt in
+            switch resualt {
+            case .success(let message):
+                switch message{
+                case .data(let dataLocal):
+                    print("Get Data:",dataLocal)
+                    data.append(dataLocal.description)
+                case .string(let message):
+                    strData.append(message)
+                    print("Get Message:",message)
+                @unknown default:
+                    break
                 }
-            })
-        }
+            case .failure(let error):
+                print("Recive Error:",error)
+            }
+        })
     }
 }
 
